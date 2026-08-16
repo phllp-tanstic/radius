@@ -1,26 +1,41 @@
-# Dependencies
-node_modules/
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# Next.js build output
-.next/
-out/
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
 
-# Environment variables (NEVER commit secrets)
-.env
-.env.local
-.env*.local
+# testing
+/coverage
 
-# HydraDB local data (we'll run this via Docker soon)
-.hydradb/
+# next.js
+/.next/
+/out/
 
-# Logs
-npm-debug.log*
-*.log
+# production
+/build
 
-# OS files
-Thumbs.db
+# misc
 .DS_Store
+*.pem
 
-# Editor
-.vscode/*
-!.vscode/extensions.json
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
