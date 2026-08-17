@@ -13,6 +13,23 @@ Keep this updated if we discover more constraints during Phase 1+.
   using bounded variable-length (`*1..3` — max is required, unbounded `*`
   or `*1..` is rejected).
 - **One statement per request.** No semicolon-chained multi-statements.
+- **A standalone single-node `MERGE` is never valid, in any form, outside
+  `UNWIND`.** Confirmed from source (`opencypher.rs`, `lower_simple_merge`):
+  the interactive query engine's MERGE handler unconditionally requires an
+  edge pattern. Even upserting exactly one node must go through the
+  `UNWIND $rows AS row MERGE (n {id: row.id}) SET ...` batch form, wrapping
+  a single row as a one-element list.
+- **`MERGE` (outside `UNWIND`) cannot be followed by another clause at
+  all** — not just no `ON CREATE`/`ON MATCH`. `MERGE (u)-[:X]->(v) SET ...`
+  in one statement is rejected; apply properties via a separate `MATCH ...
+  SET` call.
+- **Node ids must be sent as real Bolt integers, not plain JS numbers.**
+  Confirmed from the `neo4j-driver` package source
+  (`packstream-v1.js`): a plain JS `number` is *always* packed as Bolt
+  `Float`, unconditionally — there's no safe-integer special case. Only
+  `neo4j.int(x)` (or a native `bigint`) is packed as a real Bolt `Integer`.
+  HydraDB's `id` fields reject anything that arrives as a `Float`. Always
+  wrap ids with `neo4j.int()` at the query-parameter boundary.
 
 ## RETURN
 
