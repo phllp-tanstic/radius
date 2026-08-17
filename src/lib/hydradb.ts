@@ -3,7 +3,7 @@
 // Server-side only. Never import this from a client component — these
 // credentials must not reach the browser.
 
-import neo4j, { type Driver } from "neo4j-driver";
+import neo4j, { type Driver, type Integer } from "neo4j-driver";
 
 let driver: Driver | null = null;
 
@@ -42,4 +42,13 @@ export async function closeHydraDriver(): Promise<void> {
     await driver.close();
     driver = null;
   }
+}
+
+/**
+ * Wraps a node id for use as a Cypher query parameter. HydraDB rejects
+ * ids that arrive as a Bolt Float — plain JS numbers are always packed
+ * as Float by the driver, so every id must be wrapped before being sent.
+ */
+export function toBoltId(id: number): Integer {
+  return neo4j.int(id);
 }
