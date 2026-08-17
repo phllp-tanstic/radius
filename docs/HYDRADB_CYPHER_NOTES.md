@@ -30,6 +30,20 @@ Keep this updated if we discover more constraints during Phase 1+.
   `neo4j.int(x)` (or a native `bigint`) is packed as a real Bolt `Integer`.
   HydraDB's `id` fields reject anything that arrives as a `Float`. Always
   wrap ids with `neo4j.int()` at the query-parameter boundary.
+- **HydraDB only supports auto-commit `RUN` queries — explicit/managed
+  transactions are rejected outright** (`Neo.ClientError.Transaction.
+  TransactionStartFailed: explicit transactions are not supported`).
+  This means the driver's `session.executeWrite`/`executeRead` helpers
+  (which wrap queries in `BEGIN`/`COMMIT`) cannot be used. Always call
+  `session.run(...)` directly.
+- **`neo4j-driver` versions from ~5.28.3 onward (and all 6.x) have an
+  intermittent bug in their "extended handshake manifest" negotiation**
+  that can crash with `RangeError: offset is out of range` inside
+  `handshakeNegotiationV2`, non-deterministically. Confirmed as a real
+  client-side race (not a HydraDB protocol issue) by comparing driver
+  source across versions. **Pin `neo4j-driver` to `5.20.0`** — it uses
+  only the classic handshake (no manifest negotiation), which HydraDB's
+  classic path (Bolt 5.1–5.4) satisfies cleanly.
 
 ## RETURN
 

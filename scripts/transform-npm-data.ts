@@ -37,6 +37,7 @@ interface TransformedVersion {
   compromisedUntil: string | null;
   dependencies: Array<{ name: string; versionRange: string }>;
   dependencySource: string | null; // set only when borrowed from a nearby real version
+  role: "malicious_1" | "malicious_2" | "patched";
 }
 
 function parseSemver(v: string): [number, number, number] {
@@ -107,6 +108,9 @@ async function main() {
           ([name, versionRange]) => ({ name, versionRange })
         ),
         dependencySource,
+        role: semver === pkg.affectedVersions[0] ? "malicious_1"
+          : semver === pkg.affectedVersions[1] ? "malicious_2"
+          : "patched",
       });
     }
   }
