@@ -92,6 +92,17 @@ CALL algo.SSpaths({sourceNode: 7, relTypes: ['DEPENDS_ON'], maxLen: 11})
   source, many reachable), `algo.MSpaths` (many sources).
 - `RETURN` after `CALL` may only reference yielded columns (`path`,
   `pathWeight`, `pathCost`).
+- **Always pass `pathCount` and `resultLimit` explicitly.** Confirmed
+  empirically (scripts/test-blast-radius.ts): omitting them caused
+  `SSpaths` to return far fewer results than actually exist in the graph
+  (1 result instead of the real 4+ distinct reachable targets), even
+  though their documented defaults (`pathCount: 1`, `resultLimit:`
+  server's `max_query_result_vertices`, default 100,000) shouldn't cause
+  that on their own. Root cause not fully traced into the BFS
+  implementation, but the fix is reliable and reproducible: e.g.
+  `pathCount: 10, resultLimit: 1000`. With `pathCount > 1`, expect
+  multiple paths to the SAME target (different routes) — de-duplicate by
+  the target node's id, keeping the shortest hop count.
 
 ## Debugging a query before running it for real
 
