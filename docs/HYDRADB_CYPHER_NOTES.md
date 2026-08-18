@@ -19,6 +19,20 @@ Keep this updated if we discover more constraints during Phase 1+.
   edge pattern. Even upserting exactly one node must go through the
   `UNWIND $rows AS row MERGE (n {id: row.id}) SET ...` batch form, wrapping
   a single row as a one-element list.
+- **`MATCH` followed by `MERGE` is never a recognized mutation shape**,
+  regardless of what the MERGE does. Confirmed from source
+  (`lower_mutation_query_body`): after an initial `MATCH`, only `SET`,
+  `DELETE`, or `REMOVE` are recognized as valid follow-on mutations — a
+  trailing `MERGE` clause causes the whole query to be rejected as
+  unrecognized, surfacing as `"write query is not executable by the
+  mutation engine"`. To create an edge between two already-known ids, use
+  a **standalone** `MERGE (a {id: $a})-[r:TYPE]->(b {id: $b})` with no
+  preceding `MATCH` — `MERGE` alone locates-or-creates both endpoints.
+- **Inside `UNWIND`, every `SET` value must read from the row map** — a
+  literal constant (e.g. `SET n.flag = true`) is rejected with `"UNWIND
+  vertex SET values must read fields from the row map"`. Put literal
+  values into the row object itself (`{ ..., flag: true }`) and reference
+  them as `row.flag`.
 - **`MERGE` (outside `UNWIND`) cannot be followed by another clause at
   all** — not just no `ON CREATE`/`ON MATCH`. `MERGE (u)-[:X]->(v) SET ...`
   in one statement is rejected; apply properties via a separate `MATCH ...
