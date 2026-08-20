@@ -33,7 +33,8 @@ interface PathChain {
 
 export interface RemediationStep {
   packageName: string;
-  semver: string;
+  semver: string; // the compromised version being flagged for patching
+  recommendedUpgradeVersions: string[]; // real, ingested non-compromised versions of this package
   servicesCleared: string[];
 }
 
@@ -154,9 +155,19 @@ export async function getMinimalRemediation(
     if (bestNodeId === null) break; // shouldn't happen, but avoid an infinite loop
 
     const info = nodeInfo.get(bestNodeId);
+    const packageName = info?.packageName ?? "unknown";
+
+    // Real, graph-sourced recommendation -- other ingested versions of
+    // this same package with no compromise window, not an invented value.
+    const upgradeResult = await session.run(
+      `MATCH (v:Version {packageName: $packageName}) WHERE v.compromisedAt = '' RETURN v.semver AS semver`,
+      { packageName }
+    );
+
     steps.push({
-      packageName: info?.packageName ?? "unknown",
+      packageName,
       semver: info?.semver ?? "unknown",
+      recommendedUpgradeVersions: upgradeResult.records.map((r) => r.get("semver") as string),
       servicesCleared: bestCovered,
     });
     for (const s of bestCovered) uncovered.delete(s);

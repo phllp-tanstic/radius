@@ -19,7 +19,12 @@ interface BlastRadiusResult {
 
 interface RemediationResult {
   totalExposedServices: number;
-  steps: Array<{ packageName: string; semver: string; servicesCleared: string[] }>;
+  steps: Array<{
+    packageName: string;
+    semver: string;
+    recommendedUpgradeVersions: string[];
+    servicesCleared: string[];
+  }>;
 }
 
 interface TyposquatResult {
@@ -210,8 +215,12 @@ export default function IncidentPage() {
                 </h2>
                 {remediation?.steps.map((step, i) => (
                   <div key={i} className="mb-4 pb-4 border-b border-hairline last:border-0 last:pb-0 last:mb-0">
-                    <div className="font-mono text-sm text-clear font-semibold">
-                      Patch {step.packageName}@{step.semver}
+                    <div className="font-mono text-sm">
+                      <span className="text-alert">{step.packageName}@{step.semver}</span>
+                      <span className="text-muted"> → </span>
+                      <span className="text-clear font-semibold">
+                        {step.recommendedUpgradeVersions.join(", ") || "no patched version ingested"}
+                      </span>
                     </div>
                     <div className="text-xs text-muted mt-1">
                       Clears: {step.servicesCleared.join(", ")}
