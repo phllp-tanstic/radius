@@ -29,6 +29,10 @@ Dependencies & Code as Graphs).
 - **Lockfile exposure check** — upload a real `package-lock.json` and check
   it against the ingested incident, using the lockfile's own fully-resolved
   dependency tree.
+- **AI incident summary** — a plain-English narration of already-computed
+  blast-radius and remediation results. Strictly a report-writer: it never
+  performs traversal or invents a finding, service, or remediation step not
+  already returned by HydraDB.
 - **Propagation animation** — hop-by-hop visualization of the blast radius,
   built directly on real query results.
 
@@ -218,6 +222,8 @@ Defined in `.env.local` (copy from `.env.example`):
 | `HYDRADB_NAMESPACE` | Graph namespace (`default`) |
 | `HYDRADB_GRAPH_ID` | Graph/database identifier (`default`) |
 | `HYDRADB_CELL_ID` | Cell identifier (`cell-0`) |
+| `OPENAI_API_KEY` | Required for the AI incident summary feature only — every other feature works without it |
+| `OPENAI_EXPLAINER_MODEL` | Optional, defaults to `gpt-4.1-mini` |
 
 Note: use `bolt://`, not `neo4j://` — the latter's cluster-routing
 handshake has an intermittent incompatibility with this HydraDB build (see
@@ -242,6 +248,7 @@ API routes (`POST` unless noted):
 | `/api/typosquat` | `{ packageName }` | Similarly-named packages, ranked |
 | `/api/shared-infra` | `{ packageName, semver }` | Shared maintainers and publish-identity |
 | `/api/resolution-window` | `{ packageName, semver }` | Lockfiles resolved during the compromise window |
+| `/api/incident-summary` | `{ packageName, semver }` | Plain-English narration of real blast-radius and remediation results |
 | `/api/check-lockfile` | `{ lockfileContent }` | Exposure findings for an uploaded lockfile |
 | `/api/stats`, `/api/versions-list`, `/api/health/hydradb` | `GET` | Ingestion stats, selectable versions, connectivity check |
 
@@ -304,4 +311,7 @@ Third-party data and services:
 Third-party libraries: see `package.json`. Notably
 [`neo4j-driver`](https://www.npmjs.com/package/neo4j-driver) (pinned to
 `5.20.0` — newer versions have an intermittent handshake-negotiation
-incompatibility with this HydraDB build, see `docs/HYDRADB_CYPHER_NOTES.md`).
+incompatibility with this HydraDB build, see `docs/HYDRADB_CYPHER_NOTES.md`)
+and the [OpenAI API](https://platform.openai.com) (`gpt-4.1-mini` by
+default), used strictly as a report-writer over already-computed graph
+results — never for traversal or remediation decisions.
