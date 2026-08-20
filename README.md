@@ -78,12 +78,11 @@ has no representation in a vector index. Replaced with a relational
 database, the same query requires hand-rolled recursive CTEs that don't
 scale cleanly to ecosystem-sized graphs.
 
-**Note:** the Radius design also specifies an optional LLM layer that
-narrates already-computed structured results without performing or
-substituting for traversal (all security-relevant decisions — exposure,
-remediation — are deterministic graph queries, never LLM-generated). That
-layer is not implemented in this submission; every query above is built
-and functional without it.
+**Note:** Radius also includes an optional LLM layer that narrates
+already-computed structured results without performing or substituting for
+traversal (all security-relevant decisions — exposure, remediation — are
+deterministic graph queries, never LLM-generated). It requires
+`OPENAI_API_KEY`; every query above is built and functional without it.
 
 ---
 
@@ -251,6 +250,10 @@ API routes (`POST` unless noted):
 | `/api/incident-summary` | `{ packageName, semver }` | Plain-English narration of real blast-radius and remediation results |
 | `/api/check-lockfile` | `{ lockfileContent }` | Exposure findings for an uploaded lockfile |
 | `/api/stats`, `/api/versions-list`, `/api/health/hydradb` | `GET` | Ingestion stats, selectable versions, connectivity check |
+
+`maxHops` is optional and defaults to 6; valid range is 1–16. The upper
+bound is HydraDB's own limit — its admission control rejects a
+`native_path_max_len` above 16.
 
 ---
 
