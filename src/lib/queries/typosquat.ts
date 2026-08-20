@@ -5,7 +5,7 @@
 // distance + real npm download counts (scripts/load-similar-names.ts).
 
 import type { Session } from "neo4j-driver";
-import { toBoltId } from "../hydradb";
+import { toBoltId, toJsNumber } from "../hydradb";
 import { packageId } from "../ids";
 
 export interface TyposquatCandidate {
@@ -27,13 +27,9 @@ export async function getTyposquatCandidates(
     { pid: toBoltId(pid) }
   );
 
-  return result.records.map((record) => {
-    const editDistance = record.get("editDistance");
-    const downloadDisparity = record.get("downloadDisparity");
-    return {
-      packageName: record.get("name") as string,
-      editDistance: editDistance?.toNumber ? editDistance.toNumber() : editDistance,
-      downloadDisparity: downloadDisparity?.toNumber ? downloadDisparity.toNumber() : downloadDisparity,
-    };
-  });
+  return result.records.map((record) => ({
+    packageName: record.get("name") as string,
+    editDistance: toJsNumber(record.get("editDistance")) as number,
+    downloadDisparity: toJsNumber(record.get("downloadDisparity")) as number,
+  }));
 }

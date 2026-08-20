@@ -6,51 +6,33 @@
 // of the graph's real, verified output.
 
 import { NextRequest, NextResponse } from "next/server";
-import neo4j from "neo4j-driver";
-import { getHydraDriver } from "@/lib/hydradb";
-import { versionId } from "@/lib/ids";
+import { getSession } from "@/lib/hydradb";
+import { readJsonBody, requireString, requireIngestedVersion } from "@/lib/api-request";
 import { getBlastRadius } from "@/lib/queries/blast-radius";
 import { getMinimalRemediation } from "@/lib/queries/minimal-remediation";
 import { generateIncidentSummary } from "@/lib/explainer";
 
 export async function POST(request: NextRequest) {
-  let body: { packageName?: unknown; semver?: unknown };
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Request body must be valid JSON." }, { status: 400 });
-  }
+  const body = await readJsonBody(request);
+  if (!body.ok) return body.response;
 
-  if (typeof body.packageName !== "string" || body.packageName.trim() === "") {
-    return NextResponse.json({ error: "packageName is required and must be a non-empty string." }, { status: 400 });
-  }
-  if (typeof body.semver !== "string" || body.semver.trim() === "") {
-    return NextResponse.json({ error: "semver is required and must be a non-empty string." }, { status: 400 });
-  }
+  const packageName = requireString(body.value, "packageName");
+  if (!packageName.ok) return packageName.response;
+  const semver = requireString(body.value, "semver");
+  if (!semver.ok) return semver.response;
 
-  const driver = getHydraDriver();
-  const session = driver.session({ database: process.env.HYDRADB_GRAPH_ID });
+  const session = getSession();
 
   try {
-    const id = versionId("npm", body.packageName, body.semver);
+    const version = await requireIngestedVersion(session, packageName.value, semver.value);
+    if (!version.ok) return version.response;
 
-    const existsCheck = await session.run(
-      `MATCH (v:Version {id: $id}) RETURN v.packageName AS packageName`,
-      { id: neo4j.int(id) }
-    );
-    if (existsCheck.records.length === 0) {
-      return NextResponse.json(
-        { error: `No ingested Version found for ${body.packageName}@${body.semver}.` },
-        { status: 404 }
-      );
-    }
-
-    const blastRadius = await getBlastRadius(session, id, 6);
-    const remediation = await getMinimalRemediation(session, id, 6);
+    const blastRadius = await getBlastRadius(session, version.value, 6);
+    const remediation = await getMinimalRemediation(session, version.value, 6);
 
     const summary = await generateIncidentSummary({
-      compromisedPackageName: body.packageName,
-      compromisedSemver: body.semver,
+      compromisedPackageName: packageName.value,
+      compromisedSemver: semver.value,
       exposedVersions: blastRadius.exposedVersions,
       exposedServices: blastRadius.exposedServices,
       remediationSteps: remediation.steps.map((s) => ({

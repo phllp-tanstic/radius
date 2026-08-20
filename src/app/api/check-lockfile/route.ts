@@ -4,7 +4,8 @@
 // check against a real uploaded package-lock.json. Body: { lockfileContent: string }
 
 import { NextRequest, NextResponse } from "next/server";
-import { getHydraDriver } from "@/lib/hydradb";
+import { getSession } from "@/lib/hydradb";
+import { readJsonBody, requireString } from "@/lib/api-request";
 import { parseLockfile } from "@/lib/lockfile-parser";
 import { checkLockfileExposure } from "@/lib/queries/lockfile-exposure";
 import { TANSTACK_AFFECTED_PACKAGES } from "@/data/tanstack-incident";
@@ -12,20 +13,15 @@ import { TANSTACK_AFFECTED_PACKAGES } from "@/data/tanstack-incident";
 const CURATED_PACKAGE_NAMES = new Set(TANSTACK_AFFECTED_PACKAGES.map((p) => p.name));
 
 export async function POST(request: NextRequest) {
-  let body: { lockfileContent?: unknown };
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Request body must be valid JSON." }, { status: 400 });
-  }
+  const body = await readJsonBody(request);
+  if (!body.ok) return body.response;
 
-  if (typeof body.lockfileContent !== "string" || body.lockfileContent.trim() === "") {
-    return NextResponse.json({ error: "lockfileContent is required and must be a non-empty string." }, { status: 400 });
-  }
+  const lockfileContent = requireString(body.value, "lockfileContent");
+  if (!lockfileContent.ok) return lockfileContent.response;
 
   let entries;
   try {
-    entries = parseLockfile(body.lockfileContent);
+    entries = parseLockfile(lockfileContent.value);
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to parse lockfile." },
@@ -33,8 +29,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const driver = getHydraDriver();
-  const session = driver.session({ database: process.env.HYDRADB_GRAPH_ID });
+  const session = getSession();
 
   try {
     const findings = await checkLockfileExposure(session, entries, CURATED_PACKAGE_NAMES);

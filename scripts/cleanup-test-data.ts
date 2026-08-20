@@ -7,12 +7,11 @@
 import { config } from "dotenv";
 config({ path: ".env.local" });
 
-import { getHydraDriver, closeHydraDriver, toBoltId } from "../src/lib/hydradb";
+import { getSession, closeHydraDriver, toBoltId } from "../src/lib/hydradb";
 import { packageId } from "../src/lib/ids";
 
 async function main() {
-  const driver = getHydraDriver();
-  const session = driver.session({ database: process.env.HYDRADB_GRAPH_ID });
+  const session = getSession();
 
   try {
     const id = toBoltId(packageId("npm", "left-pad"));

@@ -10,7 +10,7 @@ config({ path: ".env.local" });
 
 import neo4j from "neo4j-driver";
 import { readFile } from "node:fs/promises";
-import { getHydraDriver, closeHydraDriver, toBoltId } from "../src/lib/hydradb";
+import { getSession, closeHydraDriver, toBoltId } from "../src/lib/hydradb";
 import { packageId } from "../src/lib/ids";
 import { TANSTACK_AFFECTED_PACKAGES } from "../src/data/tanstack-incident";
 
@@ -36,8 +36,7 @@ async function main() {
   ) as Record<string, number>;
 
   const names = TANSTACK_AFFECTED_PACKAGES.map((p) => p.name);
-  const driver = getHydraDriver();
-  const session = driver.session({ database: process.env.HYDRADB_GRAPH_ID });
+  const session = getSession();
 
   try {
     let edgeCount = 0;

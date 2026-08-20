@@ -1,26 +1,21 @@
 // src/app/api/typosquat/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { getHydraDriver } from "@/lib/hydradb";
+import { getSession } from "@/lib/hydradb";
+import { readJsonBody, requireString } from "@/lib/api-request";
 import { getTyposquatCandidates } from "@/lib/queries/typosquat";
 
 export async function POST(request: NextRequest) {
-  let body: { packageName?: unknown };
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Request body must be valid JSON." }, { status: 400 });
-  }
+  const body = await readJsonBody(request);
+  if (!body.ok) return body.response;
 
-  if (typeof body.packageName !== "string" || body.packageName.trim() === "") {
-    return NextResponse.json({ error: "packageName is required and must be a non-empty string." }, { status: 400 });
-  }
+  const packageName = requireString(body.value, "packageName");
+  if (!packageName.ok) return packageName.response;
 
-  const driver = getHydraDriver();
-  const session = driver.session({ database: process.env.HYDRADB_GRAPH_ID });
+  const session = getSession();
 
   try {
-    const candidates = await getTyposquatCandidates(session, body.packageName);
-    return NextResponse.json({ packageName: body.packageName, candidates });
+    const candidates = await getTyposquatCandidates(session, packageName.value);
+    return NextResponse.json({ packageName: packageName.value, candidates });
   } catch (error) {
     console.error("Typosquat query failed:", error);
     return NextResponse.json(

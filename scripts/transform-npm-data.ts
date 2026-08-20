@@ -16,7 +16,7 @@
 // auditable rather than silently fabricated.
 
 import { readFile, writeFile } from "node:fs/promises";
-import { TANSTACK_AFFECTED_PACKAGES } from "../src/data/tanstack-incident";
+import { TANSTACK_INCIDENT, TANSTACK_AFFECTED_PACKAGES } from "../src/data/tanstack-incident";
 
 interface NpmVersionEntry {
   dependencies?: Record<string, string>;
@@ -102,8 +102,8 @@ async function main() {
         ecosystem: "npm",
         semver,
         publishTimestamp: doc.time[semver] ?? null,
-        compromisedAt: isMalicious ? "2026-05-11T19:20:39Z" : null,
-        compromisedUntil: isMalicious ? "2026-05-11T21:03:00Z" : null,
+        compromisedAt: isMalicious ? TANSTACK_INCIDENT.compromisedAt : null,
+        compromisedUntil: isMalicious ? TANSTACK_INCIDENT.compromisedUntil : null,
         dependencies: Object.entries(versionData.dependencies ?? {}).map(
           ([name, versionRange]) => ({ name, versionRange })
         ),

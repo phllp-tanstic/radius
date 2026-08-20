@@ -11,9 +11,9 @@ import { config } from "dotenv";
 config({ path: ".env.local" });
 
 import { readFile } from "node:fs/promises";
-import { createHash } from "node:crypto";
-import { getHydraDriver, closeHydraDriver, toBoltId } from "../src/lib/hydradb";
-import { versionId, serviceId, lockfileId } from "../src/lib/ids";
+import { type Integer } from "neo4j-driver";
+import { getSession, closeHydraDriver, toBoltId } from "../src/lib/hydradb";
+import { versionId, serviceId, lockfileId, edgeId } from "../src/lib/ids";
 
 interface TransformedVersion {
   packageName: string;
@@ -39,20 +39,12 @@ const SERVICES: ServiceDef[] = [
   { serviceName: "partner-portal", repoName: "radius-demo/partner-portal", commitSha: "f2a7d84", resolvedAt: "2026-05-12T10:30:00Z", packageName: "@tanstack/solid-start", role: "patched" },
 ];
 
-function edgeId(kind: string, sourceId: number, targetId: number): number {
-  const hash = createHash("sha256").update(`${kind}:${sourceId}:${targetId}`).digest();
-  let id = 0;
-  for (let i = 0; i < 6; i++) id = id * 256 + hash[i];
-  return id;
-}
-
 async function main() {
   const versions: TransformedVersion[] = JSON.parse(
     await readFile("data/cache/transformed-versions.json", "utf-8")
   );
 
-  const driver = getHydraDriver();
-  const session = driver.session({ database: process.env.HYDRADB_GRAPH_ID });
+  const session = getSession();
 
   try {
     // --- Service nodes ---
@@ -102,7 +94,7 @@ async function main() {
     console.log(`Upserted ${usesRows.length} USES edges.`);
 
     // --- RESOLVED edges: Lockfile -> Version ---
-    const resolvedRows: Array<{ id: ReturnType<typeof toBoltId>; sourceId: ReturnType<typeof toBoltId>; targetId: ReturnType<typeof toBoltId>; resolvedAt: string }> = [];
+    const resolvedRows: Array<{ id: Integer; sourceId: Integer; targetId: Integer; resolvedAt: string }> = [];
     const missing: string[] = [];
 
     for (const s of SERVICES) {

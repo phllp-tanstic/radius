@@ -22,6 +22,7 @@
 import type { Session } from "neo4j-driver";
 import neo4j from "neo4j-driver";
 import { toBoltId } from "../hydradb";
+import { SSPATHS_FROM_SOURCE } from "./traversal";
 
 interface PathChain {
   targetVersionId: number;
@@ -50,12 +51,10 @@ export async function getMinimalRemediation(
   maxHops: number = 6
 ): Promise<MinimalRemediationResult> {
   // --- Step 1: real traversal, keeping FULL path chains, not just endpoints ---
-  const pathResult = await session.run(
-    `CALL algo.SSpaths({sourceNode: $sourceNode, relTypes: ['DEPENDS_ON'], relDirection: 'incoming', maxLen: $maxLen, pathCount: 10, resultLimit: 1000})
-     YIELD path
-     RETURN path`,
-    { sourceNode: toBoltId(compromisedVersionId), maxLen: neo4j.int(maxHops) }
-  );
+  const pathResult = await session.run(SSPATHS_FROM_SOURCE, {
+    sourceNode: toBoltId(compromisedVersionId),
+    maxLen: neo4j.int(maxHops),
+  });
 
   const bestChainByTarget = new Map<number, PathChain>();
 

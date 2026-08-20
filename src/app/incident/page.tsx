@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import SiteHeader from "@/components/SiteHeader";
 import PropagationAnimation from "@/components/PropagationAnimation";
 
 interface VersionOption {
@@ -51,10 +51,21 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
     body: JSON.stringify(body),
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
+    const err: { error?: string } = await res.json().catch(() => ({}));
     throw new Error(err.error ?? `Request to ${url} failed (${res.status})`);
   }
   return res.json();
+}
+
+/**
+ * Splits a "name@semver" selection back into its parts. Scoped packages
+ * contain their own "@", so the split has to happen at the last one.
+ */
+function splitSelection(selection: string): [packageName: string, semver: string] {
+  if (!selection) return ["", ""];
+  const at = selection.lastIndexOf("@");
+  if (at <= 0) return [selection, ""];
+  return [selection.slice(0, at), selection.slice(at + 1)];
 }
 
 export default function IncidentPage() {
@@ -93,9 +104,7 @@ export default function IncidentPage() {
     if (!selected) return;
 
     async function runQueries() {
-      const [packageName, semver] = selected.split("@").length > 2
-        ? [selected.slice(0, selected.lastIndexOf("@")), selected.slice(selected.lastIndexOf("@") + 1)]
-        : selected.split("@");
+      const [packageName, semver] = splitSelection(selected);
 
       setLoading(true);
       setError(null);
@@ -145,23 +154,11 @@ export default function IncidentPage() {
 
   const compromisedVersions = versions.filter((v) => v.compromised);
 
-  const [selectedPackageName, selectedSemver] = selected
-    ? selected.split("@").length > 2
-      ? [selected.slice(0, selected.lastIndexOf("@")), selected.slice(selected.lastIndexOf("@") + 1)]
-      : selected.split("@")
-    : ["", ""];
+  const [selectedPackageName, selectedSemver] = splitSelection(selected);
 
   return (
     <main className="min-h-screen bg-void text-ink">
-      <header className="border-b border-hairline">
-        <div className="mx-auto max-w-[1200px] px-8 py-6 flex items-center justify-between">
-          <Link href="/" className="font-semibold tracking-tight">RADIUS</Link>
-          <nav className="flex gap-6 text-sm text-muted">
-            <Link href="/incident" className="text-ink">Incident</Link>
-            <Link href="/check-lockfile" className="hover:text-ink transition-colors">Check lockfile</Link>
-          </nav>
-        </div>
-      </header>
+      <SiteHeader active="incident" />
 
       <section className="mx-auto max-w-[1200px] px-8 py-10">
         <h1 className="text-2xl font-semibold mb-2">Trace an incident</h1>

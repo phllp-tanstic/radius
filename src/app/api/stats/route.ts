@@ -4,17 +4,16 @@
 // numbers -- if ingestion changes, these change automatically.
 
 import { NextResponse } from "next/server";
-import { getHydraDriver } from "@/lib/hydradb";
+import type { Session } from "neo4j-driver";
+import { getSession, toJsNumber } from "@/lib/hydradb";
 
-async function countLabel(session: import("neo4j-driver").Session, label: string): Promise<number> {
+async function countLabel(session: Session, label: string): Promise<number> {
   const result = await session.run(`MATCH (n:${label}) RETURN count(*) AS c`);
-  const value = result.records[0]?.get("c");
-  return value?.toNumber ? value.toNumber() : value ?? 0;
+  return toJsNumber(result.records[0]?.get("c")) ?? 0;
 }
 
 export async function GET() {
-  const driver = getHydraDriver();
-  const session = driver.session({ database: process.env.HYDRADB_GRAPH_ID });
+  const session = getSession();
 
   try {
     const packages = await countLabel(session, "Package");

@@ -15,6 +15,7 @@
 import type { Session } from "neo4j-driver";
 import neo4j from "neo4j-driver";
 import { toBoltId } from "../hydradb";
+import { SSPATHS_FROM_SOURCE } from "./traversal";
 
 export interface ExposedVersion {
   packageName: string;
@@ -40,18 +41,10 @@ export async function getBlastRadius(
   compromisedVersionId: number,
   maxHops: number = 6
 ): Promise<BlastRadiusResult> {
-  // pathCount and resultLimit are passed explicitly (not omitted) --
-  // confirmed via scripts/test-blast-radius.ts that omitting them causes
-  // SSpaths to return far fewer results than actually exist in the graph,
-  // even though their documented defaults (1 and 100,000 respectively)
-  // shouldn't cause that. Explicit values reliably produce complete,
-  // correct results.
-  const pathResult = await session.run(
-    `CALL algo.SSpaths({sourceNode: $sourceNode, relTypes: ['DEPENDS_ON'], relDirection: 'incoming', maxLen: $maxLen, pathCount: 10, resultLimit: 1000})
-     YIELD path
-     RETURN path`,
-    { sourceNode: toBoltId(compromisedVersionId), maxLen: neo4j.int(maxHops) }
-  );
+  const pathResult = await session.run(SSPATHS_FROM_SOURCE, {
+    sourceNode: toBoltId(compromisedVersionId),
+    maxLen: neo4j.int(maxHops),
+  });
 
   const bestByVersionId = new Map<number, ExposedVersion>();
 

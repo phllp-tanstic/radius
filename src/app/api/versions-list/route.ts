@@ -4,11 +4,10 @@
 // incident-selection UI. No hardcoded options in the frontend.
 
 import { NextResponse } from "next/server";
-import { getHydraDriver } from "@/lib/hydradb";
+import { getSession } from "@/lib/hydradb";
 
 export async function GET() {
-  const driver = getHydraDriver();
-  const session = driver.session({ database: process.env.HYDRADB_GRAPH_ID });
+  const session = getSession();
 
   try {
     const result = await session.run(

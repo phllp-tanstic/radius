@@ -13,7 +13,7 @@ async function fetchDownloads(name: string): Promise<number> {
   const url = `https://api.npmjs.org/downloads/point/last-week/${encodeURIComponent(name)}`;
   const res = await fetch(url);
   if (!res.ok) return 0; // package too new / no data -- real 0, not an error
-  const data = await res.json();
+  const data: { downloads?: number } = await res.json();
   return data.downloads ?? 0;
 }
 

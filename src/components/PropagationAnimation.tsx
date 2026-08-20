@@ -148,10 +148,9 @@ export default function PropagationAnimation({
   useEffect(() => {
     const timers: ReturnType<typeof setTimeout>[] = [];
     timers.push(setTimeout(() => setStage(0), 0));
-    if (totalStages > 0) {
-      for (let s = 1; s <= totalStages; s++) {
-        timers.push(setTimeout(() => setStage(s), s * STAGE_INTERVAL_MS));
-      }
+    // totalStages is maxHop + 2, so there is always at least one stage.
+    for (let s = 1; s <= totalStages; s++) {
+      timers.push(setTimeout(() => setStage(s), s * STAGE_INTERVAL_MS));
     }
     return () => timers.forEach(clearTimeout);
   }, [compromisedPackageName, compromisedSemver, exposedVersions, exposedServices, replayKey, totalStages]);

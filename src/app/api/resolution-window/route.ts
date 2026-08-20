@@ -1,29 +1,23 @@
 // src/app/api/resolution-window/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { getHydraDriver } from "@/lib/hydradb";
+import { getSession } from "@/lib/hydradb";
+import { readJsonBody, requireString } from "@/lib/api-request";
 import { getResolutionWindowAudit } from "@/lib/queries/resolution-window";
 
 export async function POST(request: NextRequest) {
-  let body: { packageName?: unknown; semver?: unknown };
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Request body must be valid JSON." }, { status: 400 });
-  }
+  const body = await readJsonBody(request);
+  if (!body.ok) return body.response;
 
-  if (typeof body.packageName !== "string" || body.packageName.trim() === "") {
-    return NextResponse.json({ error: "packageName is required and must be a non-empty string." }, { status: 400 });
-  }
-  if (typeof body.semver !== "string" || body.semver.trim() === "") {
-    return NextResponse.json({ error: "semver is required and must be a non-empty string." }, { status: 400 });
-  }
+  const packageName = requireString(body.value, "packageName");
+  if (!packageName.ok) return packageName.response;
+  const semver = requireString(body.value, "semver");
+  if (!semver.ok) return semver.response;
 
-  const driver = getHydraDriver();
-  const session = driver.session({ database: process.env.HYDRADB_GRAPH_ID });
+  const session = getSession();
 
   try {
-    const hits = await getResolutionWindowAudit(session, body.packageName, body.semver);
-    return NextResponse.json({ packageName: body.packageName, semver: body.semver, hits });
+    const hits = await getResolutionWindowAudit(session, packageName.value, semver.value);
+    return NextResponse.json({ packageName: packageName.value, semver: semver.value, hits });
   } catch (error) {
     console.error("Resolution-window query failed:", error);
     return NextResponse.json(

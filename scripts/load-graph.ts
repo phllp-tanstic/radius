@@ -22,9 +22,8 @@ config({ path: ".env.local" });
 
 import { type Integer } from "neo4j-driver";
 import { readFile } from "node:fs/promises";
-import { createHash } from "node:crypto";
-import { getHydraDriver, closeHydraDriver, toBoltId } from "../src/lib/hydradb";
-import { packageId, versionId } from "../src/lib/ids";
+import { getSession, closeHydraDriver, toBoltId } from "../src/lib/hydradb";
+import { packageId, versionId, edgeId } from "../src/lib/ids";
 
 interface TransformedVersion {
   packageName: string;
@@ -38,20 +37,12 @@ interface TransformedVersion {
   role: "malicious_1" | "malicious_2" | "patched";
 }
 
-function dependsOnEdgeId(sourceId: number, targetId: number): number {
-  const hash = createHash("sha256").update(`depends_on:${sourceId}:${targetId}`).digest();
-  let id = 0;
-  for (let i = 0; i < 6; i++) id = id * 256 + hash[i];
-  return id;
-}
-
 async function main() {
   const versions: TransformedVersion[] = JSON.parse(
     await readFile("data/cache/transformed-versions.json", "utf-8")
   );
 
-  const driver = getHydraDriver();
-  const session = driver.session({ database: process.env.HYDRADB_GRAPH_ID });
+  const session = getSession();
 
   try {
     // --- 1. Package nodes ---------------------------------------------
@@ -121,7 +112,7 @@ async function main() {
 
         const targetId = versionId("npm", match.packageName, match.semver);
         edgeRows.push({
-          id: toBoltId(dependsOnEdgeId(sourceId, targetId)),
+          id: toBoltId(edgeId("depends_on", sourceId, targetId)),
           sourceId: toBoltId(sourceId),
           targetId: toBoltId(targetId),
           kind: "prod",

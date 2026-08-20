@@ -6,59 +6,28 @@
 // POST body: { packageName: string, semver: string, maxHops?: number }
 
 import { NextRequest, NextResponse } from "next/server";
-import neo4j from "neo4j-driver";
-import { getHydraDriver } from "@/lib/hydradb";
-import { versionId } from "@/lib/ids";
+import { getSession } from "@/lib/hydradb";
+import { readJsonBody, requireString, requireMaxHops, requireIngestedVersion } from "@/lib/api-request";
 import { getBlastRadius } from "@/lib/queries/blast-radius";
 
-interface RequestBody {
-  packageName?: unknown;
-  semver?: unknown;
-  maxHops?: unknown;
-}
-
 export async function POST(request: NextRequest) {
-  let body: RequestBody;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Request body must be valid JSON." }, { status: 400 });
-  }
+  const body = await readJsonBody(request);
+  if (!body.ok) return body.response;
 
-  const { packageName, semver, maxHops } = body;
+  const packageName = requireString(body.value, "packageName");
+  if (!packageName.ok) return packageName.response;
+  const semver = requireString(body.value, "semver");
+  if (!semver.ok) return semver.response;
+  const maxHops = requireMaxHops(body.value);
+  if (!maxHops.ok) return maxHops.response;
 
-  if (typeof packageName !== "string" || packageName.trim() === "") {
-    return NextResponse.json({ error: "packageName is required and must be a non-empty string." }, { status: 400 });
-  }
-  if (typeof semver !== "string" || semver.trim() === "") {
-    return NextResponse.json({ error: "semver is required and must be a non-empty string." }, { status: 400 });
-  }
-  const resolvedMaxHops = maxHops === undefined ? 6 : Number(maxHops);
-  if (!Number.isInteger(resolvedMaxHops) || resolvedMaxHops < 1 || resolvedMaxHops > 20) {
-    return NextResponse.json({ error: "maxHops must be an integer between 1 and 20." }, { status: 400 });
-  }
-
-  const driver = getHydraDriver();
-  const session = driver.session({ database: process.env.HYDRADB_GRAPH_ID });
+  const session = getSession();
 
   try {
-    const id = versionId("npm", packageName, semver);
+    const version = await requireIngestedVersion(session, packageName.value, semver.value);
+    if (!version.ok) return version.response;
 
-    // Confirm the version actually exists before traversing — a
-    // nonexistent id would otherwise just silently return zero results,
-    // which looks identical to "exists but nothing depends on it."
-    const existsCheck = await session.run(
-      `MATCH (v:Version {id: $id}) RETURN v.packageName AS packageName`,
-      { id: neo4j.int(id) }
-    );
-    if (existsCheck.records.length === 0) {
-      return NextResponse.json(
-        { error: `No ingested Version found for ${packageName}@${semver}.` },
-        { status: 404 }
-      );
-    }
-
-    const result = await getBlastRadius(session, id, resolvedMaxHops);
+    const result = await getBlastRadius(session, version.value, maxHops.value);
     return NextResponse.json(result);
   } catch (error) {
     console.error("Blast radius query failed:", error);

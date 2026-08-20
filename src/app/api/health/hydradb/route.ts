@@ -9,19 +9,17 @@
 // server (see Phase 0 connectivity checks).
 
 import { NextResponse } from "next/server";
-import { getHydraDriver } from "@/lib/hydradb";
+import { getSession, toJsNumber } from "@/lib/hydradb";
 
 export async function GET() {
-  const driver = getHydraDriver();
-  const session = driver.session({ database: process.env.HYDRADB_GRAPH_ID });
+  const session = getSession();
 
   try {
     const result = await session.run("MATCH (n:Package) RETURN count(*) AS ok");
-    const value = result.records[0]?.get("ok");
 
     return NextResponse.json({
       status: "connected",
-      nodeCount: value?.toNumber ? value.toNumber() : value,
+      nodeCount: toJsNumber(result.records[0]?.get("ok")),
     });
   } catch (error) {
     return NextResponse.json(

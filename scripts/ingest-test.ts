@@ -17,12 +17,11 @@ import { config } from "dotenv";
 config({ path: ".env.local" });
 
 import neo4j from "neo4j-driver";
-import { getHydraDriver, closeHydraDriver } from "../src/lib/hydradb";
+import { getSession, closeHydraDriver } from "../src/lib/hydradb";
 import { packageId } from "../src/lib/ids";
 
 async function main() {
-  const driver = getHydraDriver();
-  const session = driver.session({ database: process.env.HYDRADB_GRAPH_ID });
+  const session = getSession();
 
   const id = packageId("npm", "left-pad");
 

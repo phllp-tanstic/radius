@@ -38,3 +38,12 @@ export function serviceId(name: string): number {
 export function lockfileId(repoName: string, commitSha: string): number {
   return deterministicId(`lockfile:${repoName}:${commitSha}`);
 }
+
+/**
+ * Edge ids follow the same scheme, keyed by edge kind plus both endpoint
+ * ids — e.g. edgeId("depends_on", sourceId, targetId). Ingestion scripts
+ * share this so an edge's id is derived one way only.
+ */
+export function edgeId(kind: string, sourceId: number, targetId: number): number {
+  return deterministicId(`${kind}:${sourceId}:${targetId}`);
+}

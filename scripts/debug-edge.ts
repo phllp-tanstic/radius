@@ -8,13 +8,12 @@
 import { config } from "dotenv";
 config({ path: ".env.local" });
 
-import { getHydraDriver, closeHydraDriver, toBoltId } from "../src/lib/hydradb";
+import { getSession, closeHydraDriver, toBoltId } from "../src/lib/hydradb";
 import { versionId } from "../src/lib/ids";
 import { readFile } from "node:fs/promises";
 
 async function main() {
-  const driver = getHydraDriver();
-  const session = driver.session({ database: process.env.HYDRADB_GRAPH_ID });
+  const session = getSession();
 
   const reactStartId = versionId("npm", "@tanstack/react-start", "1.167.68");
   const reactRouterId = versionId("npm", "@tanstack/react-router", "1.169.5");

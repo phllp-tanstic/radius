@@ -2,14 +2,13 @@
 import { config } from "dotenv";
 config({ path: ".env.local" });
 
-import { getHydraDriver, closeHydraDriver } from "../src/lib/hydradb";
+import { getSession, closeHydraDriver } from "../src/lib/hydradb";
 import { getTyposquatCandidates } from "../src/lib/queries/typosquat";
 import { getSharedMaintainers, getSharedInfra } from "../src/lib/queries/shared-infra";
 import { getResolutionWindowAudit } from "../src/lib/queries/resolution-window";
 
 async function main() {
-  const driver = getHydraDriver();
-  const session = driver.session({ database: process.env.HYDRADB_GRAPH_ID });
+  const session = getSession();
 
   try {
     console.log("--- Typosquat candidates for @tanstack/react-start ---");

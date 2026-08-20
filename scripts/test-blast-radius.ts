@@ -7,13 +7,12 @@
 import { config } from "dotenv";
 config({ path: ".env.local" });
 
-import { getHydraDriver, closeHydraDriver, toBoltId } from "../src/lib/hydradb";
+import { getSession, closeHydraDriver, toBoltId } from "../src/lib/hydradb";
 import { versionId } from "../src/lib/ids";
 import { getBlastRadius } from "../src/lib/queries/blast-radius";
 
 async function main() {
-  const driver = getHydraDriver();
-  const session = driver.session({ database: process.env.HYDRADB_GRAPH_ID });
+  const session = getSession();
 
   const compromisedId = versionId("npm", "@tanstack/react-router", "1.169.5");
 

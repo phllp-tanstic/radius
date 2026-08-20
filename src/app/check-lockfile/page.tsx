@@ -2,7 +2,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import Link from "next/link";
+import SiteHeader from "@/components/SiteHeader";
 
 interface Finding {
   packageName: string;
@@ -70,7 +70,7 @@ export default function CheckLockfilePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ lockfileContent: content }),
       });
-      const data = await res.json();
+      const data: CheckResult & { error?: string } = await res.json();
       if (!res.ok) {
         throw new Error(data.error ?? "Check failed.");
       }
@@ -84,15 +84,7 @@ export default function CheckLockfilePage() {
 
   return (
     <main className="min-h-screen bg-void text-ink">
-      <header className="border-b border-hairline">
-        <div className="mx-auto max-w-[1200px] px-8 py-6 flex items-center justify-between">
-          <Link href="/" className="font-semibold tracking-tight">RADIUS</Link>
-          <nav className="flex gap-6 text-sm text-muted">
-            <Link href="/incident" className="hover:text-ink transition-colors">Incident</Link>
-            <Link href="/check-lockfile" className="text-ink">Check lockfile</Link>
-          </nav>
-        </div>
-      </header>
+      <SiteHeader active="check-lockfile" />
 
       <section className="mx-auto max-w-[1200px] px-8 py-10">
         <h1 className="text-2xl font-semibold mb-2">Check your lockfile</h1>

@@ -14,7 +14,8 @@ import { config } from "dotenv";
 config({ path: ".env.local" });
 
 import { readFile } from "node:fs/promises";
-import { getHydraDriver, closeHydraDriver, toBoltId } from "../src/lib/hydradb";
+import { type Integer } from "neo4j-driver";
+import { getSession, closeHydraDriver, toBoltId } from "../src/lib/hydradb";
 import { packageId, versionId, maintainerId } from "../src/lib/ids";
 import { TANSTACK_INCIDENT, TANSTACK_AFFECTED_PACKAGES } from "../src/data/tanstack-incident";
 
@@ -48,12 +49,11 @@ async function main() {
     await readFile("data/cache/transformed-versions.json", "utf-8")
   ) as TransformedVersion[];
 
-  const driver = getHydraDriver();
-  const session = driver.session({ database: process.env.HYDRADB_GRAPH_ID });
+  const session = getSession();
 
   try {
-    const maintainerRows: Array<{ id: ReturnType<typeof toBoltId>; handle: string }> = [];
-    const maintainsRows: Array<{ id: ReturnType<typeof toBoltId>; packageName: string }> = [];
+    const maintainerRows: Array<{ id: Integer; handle: string }> = [];
+    const maintainsRows: Array<{ id: Integer; packageName: string }> = [];
     const seenMaintainers = new Set<string>();
 
     for (const pkg of TANSTACK_AFFECTED_PACKAGES) {
