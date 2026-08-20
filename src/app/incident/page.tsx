@@ -40,6 +40,10 @@ interface ResolutionWindowResult {
   hits: Array<{ repoName: string; resolvedAt: string }>;
 }
 
+interface SummaryResult {
+  summary: string;
+}
+
 async function postJson<T>(url: string, body: unknown): Promise<T> {
   const res = await fetch(url, {
     method: "POST",
@@ -64,6 +68,9 @@ export default function IncidentPage() {
   const [typosquat, setTyposquat] = useState<TyposquatResult | null>(null);
   const [sharedInfra, setSharedInfra] = useState<SharedInfraResult | null>(null);
   const [resolutionWindow, setResolutionWindow] = useState<ResolutionWindowResult | null>(null);
+
+  const [summary, setSummary] = useState<SummaryResult | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
 
   useEffect(() => {
     fetch("/api/versions-list")
@@ -117,6 +124,19 @@ export default function IncidentPage() {
         setError(err instanceof Error ? err.message : "One or more queries failed.");
       } finally {
         setLoading(false);
+      }
+
+      // Summary is best-effort and separate -- a missing/invalid OpenAI
+      // key shouldn't block the core (real, required) query results above.
+      setSummary(null);
+      setSummaryLoading(true);
+      try {
+        const s = await postJson<SummaryResult>("/api/incident-summary", body);
+        setSummary(s);
+      } catch {
+        setSummary(null); // silently omit the panel rather than surface a secondary error
+      } finally {
+        setSummaryLoading(false);
       }
     }
 
@@ -179,6 +199,17 @@ export default function IncidentPage() {
               exposedVersions={blastRadius.exposedVersions}
               exposedServices={blastRadius.exposedServices}
             />
+
+            {(summaryLoading || summary) && (
+              <div className="bg-panel p-6">
+                <h2 className="text-xs font-mono text-muted tracking-wide mb-4">AI INCIDENT SUMMARY</h2>
+                {summaryLoading ? (
+                  <p className="text-sm text-muted font-mono">Generating…</p>
+                ) : (
+                  <p className="text-sm text-ink leading-relaxed">{summary?.summary}</p>
+                )}
+              </div>
+            )}
 
             {/* Blast radius + remediation, side by side */}
             <div className="grid md:grid-cols-2 gap-px bg-hairline">
