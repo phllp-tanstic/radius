@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import PropagationAnimation from "@/components/PropagationAnimation";
 
 interface VersionOption {
   packageName: string;
@@ -117,9 +118,13 @@ export default function IncidentPage() {
     runQueries();
   }, [selected]);
 
-  // Scoped-name-safe: package names contain "@" and "/" -- use a
-  // delimiter unlikely to collide instead of naive splitting.
   const compromisedVersions = versions.filter((v) => v.compromised);
+
+  const [selectedPackageName, selectedSemver] = selected
+    ? selected.split("@").length > 2
+      ? [selected.slice(0, selected.lastIndexOf("@")), selected.slice(selected.lastIndexOf("@") + 1)]
+      : selected.split("@")
+    : ["", ""];
 
   return (
     <main className="min-h-screen bg-void text-ink">
@@ -161,7 +166,15 @@ export default function IncidentPage() {
         {loading && <div className="mt-8 text-sm text-muted font-mono">Running real graph queries…</div>}
 
         {!loading && blastRadius && (
-          <div className="mt-10 grid gap-px bg-hairline">
+          <div className="mt-10 space-y-px bg-hairline">
+            {/* Propagation animation -- full width, built on the same real data */}
+            <PropagationAnimation
+              compromisedPackageName={selectedPackageName}
+              compromisedSemver={selectedSemver}
+              exposedVersions={blastRadius.exposedVersions}
+              exposedServices={blastRadius.exposedServices}
+            />
+
             {/* Blast radius + remediation, side by side */}
             <div className="grid md:grid-cols-2 gap-px bg-hairline">
               <div className="bg-panel p-6">
