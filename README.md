@@ -188,7 +188,7 @@ cp .env.example .env.local
 
 ### 5. Ingest data
 
-Run in order — each script is idempotent (safe to re-run):
+Run in order. Each script is idempotent against a fresh volume:
 
 ```bash
 npx tsx scripts/fetch-npm-metadata.ts       # real npm registry data, 42 packages
@@ -198,6 +198,18 @@ npx tsx scripts/load-services.ts            # synthetic Service/Lockfile layer
 npx tsx scripts/load-maintainers.ts         # real Maintainer nodes, MAINTAINS/PUBLISHED_BY
 npx tsx scripts/fetch-download-counts.ts    # real npm download stats
 npx tsx scripts/load-similar-names.ts       # SIMILAR_NAME edges (Levenshtein distance)
+```
+
+Re-running ingestion against an already-populated container may fail with
+`internal query execution error`. This is an upstream HydraDB limitation in
+its local-disk storage backend (`CLOUD_PROVIDER=local`) — `put_opts` with
+mode `PutMode::Update` is not yet implemented by `LocalFileSystem`, visible
+in `docker logs hydradb`. It is not a Radius bug and does not affect
+first-time setup on a fresh volume. If you hit it, recreate the volume and
+repeat steps 2–5:
+
+```bash
+docker rm -f hydradb && docker volume rm hydradb-data
 ```
 
 ### 6. Run
@@ -218,9 +230,9 @@ Defined in `.env.local` (copy from `.env.example`):
 |---|---|
 | `HYDRADB_BOLT_URI` | Bolt connection string, e.g. `bolt://127.0.0.1:7687` |
 | `HYDRADB_AUTH_TOKEN` | Bearer token matching the container's `/data/auth-token` |
-| `HYDRADB_NAMESPACE` | Graph namespace (`default`) |
+| `HYDRADB_NAMESPACE` | Graph namespace (`default`) — container config, mirrored here for reference; not read by the Next.js app |
 | `HYDRADB_GRAPH_ID` | Graph/database identifier (`default`) |
-| `HYDRADB_CELL_ID` | Cell identifier (`cell-0`) |
+| `HYDRADB_CELL_ID` | Cell identifier (`cell-0`) — container config, mirrored here for reference; not read by the Next.js app |
 | `OPENAI_API_KEY` | Required for the AI incident summary feature only — every other feature works without it |
 | `OPENAI_EXPLAINER_MODEL` | Optional, defaults to `gpt-4.1-mini` |
 

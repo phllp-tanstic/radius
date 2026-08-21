@@ -68,6 +68,11 @@ function splitSelection(selection: string): [packageName: string, semver: string
   return [selection.slice(0, at), selection.slice(at + 1)];
 }
 
+// Version selected on first load. Chosen because its blast radius spans
+// more than one hop, which the shallower alternatives do not.
+const DEFAULT_PACKAGE_NAME = "@tanstack/history";
+const DEFAULT_SEMVER = "1.161.9";
+
 export default function IncidentPage() {
   const [versions, setVersions] = useState<VersionOption[]>([]);
   const [selected, setSelected] = useState<string>("");
@@ -88,8 +93,15 @@ export default function IncidentPage() {
       .then((res) => res.json())
       .then((data) => {
         setVersions(data.versions ?? []);
+        // Default to a version whose blast radius actually spans multiple
+        // hops -- @tanstack/history@1.161.9 exposes 10 versions across two
+        // hop levels and reaches 2 services, so the landing view shows real
+        // transitive traversal rather than direct dependents only.
         const preferred = data.versions?.find(
-          (v: VersionOption) => v.packageName === "@tanstack/react-router" && v.compromised
+          (v: VersionOption) =>
+            v.packageName === DEFAULT_PACKAGE_NAME &&
+            v.semver === DEFAULT_SEMVER &&
+            v.compromised
         );
         const fallback = data.versions?.find((v: VersionOption) => v.compromised);
         const initial = preferred ?? fallback;

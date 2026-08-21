@@ -220,8 +220,10 @@ export default function HomePage() {
             &ldquo;Which of my systems are exposed, right now, and what&apos;s the fastest way
             to stop the bleeding&rdquo; is a multi-hop, time-sensitive graph traversal —
             not something a vector index or hand-rolled SQL can do at this speed
-            or correctness. Radius runs on HydraDB&apos;s native <span className="text-ink">algo.SSpaths</span> and{" "}
-            <span className="text-ink">algo.MSpaths</span> for real, snapshot-consistent traversal.
+            or correctness. Radius runs on HydraDB&apos;s native{" "}
+            <span className="text-ink">algo.SSpaths</span> for real, snapshot-consistent
+            traversal — walking <span className="text-ink">DEPENDS_ON</span> edges in
+            reverse to find every dependent, bounded by hop count.
           </p>
         </div>
       </section>
