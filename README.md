@@ -14,6 +14,14 @@ Dependencies & Code as Graphs).
 
 ---
 
+## Demo
+
+**[▶ Watch the demo (2 min)](https://youtu.be/YMfJ2n4opX0)** — blast radius,
+minimal remediation, resolution-window audit, and the lockfile exposure check,
+running against the real ingested incident.
+
+---
+
 ## What it does
 
 - **Blast radius** — given a compromised package version, traverses the real
